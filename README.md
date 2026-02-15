@@ -1,6 +1,6 @@
 # Spectral Diffusion Prior for Hyperspectral Image Super-Resolution
 
-> This repository contains an implementation of the **Spectral Diffusion Prior (SDP) model** for fusion-based hyperspectral image (HSI) super-resolution, as proposed by Liu et al. ([paper attached](./SDP_paper.pdf)).  
+> This repository contains an implementation of the **Spectral Diffusion Prior (SDP) model** for fusion-based hyperspectral image (HSI) super-resolution, as proposed by Liu et al. ([paper attached](./SDP-paper.pdf)).  
 The method fuses a low-resolution HSI with a high-resolution multispectral image using a diffusion-based spectral prior, achieving high-spatial-resolution HSI reconstruction.  
 A complete pipeline is provided for Hyperspectral Image Super-Resolution on **EnMAP** and **Sentinel-2** data.
 
