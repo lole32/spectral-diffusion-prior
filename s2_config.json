@@ -1,0 +1,11 @@
+{
+    "aoi_geojson": "/home/jovyan/spectral-diffusion-prior/spectral_diffusion_prior/refined_code/images/AOIs/china_4326.geojson",
+    "start_date": "2025-12-04",
+    "end_date": "2025-12-14",
+    "max_cloud_cover": 10,
+    "output_dir": "./images/sentinel2",
+    "download_format": "NetCDF",
+    "native_10m_only": true,
+    "split_per_date": true,
+    "enmap_tif": "/home/jovyan/spectral-diffusion-prior/spectral_diffusion_prior/refined_code/images/enmap/ENMAP01-____L2A-DT0000166572_20251204T034207Z_010_V010505_20260122T233736Z-SPECTRAL_IMAGE.TIF"
+}

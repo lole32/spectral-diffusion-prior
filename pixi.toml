@@ -1,0 +1,43 @@
+[workspace]
+name = "spectral-diffusion-prior"
+version = "0.1.0"
+description = "Environment managed with pixi for JupyterHub"
+channels = ["https://prefix.dev/conda-forge"]
+platforms = ["linux-64"]
+
+[system-requirements]
+# Your driver has CUDA 12.9, so CUDA 12.x builds are fine
+cuda = "12"
+
+[dependencies]
+# Use a PyTorch-compatible Python (per pixi + PyTorch docs)
+python = "3.11.*"
+
+# Core scientific stack
+scipy = ">=1.10.0,<1.14.0"
+tqdm = ">=4.67.1,<5.0.0"
+matplotlib = ">=3.5.0,<3.8.0"
+scikit-image = ">=0.19.0,<0.22.0"
+h5py = ">=3.15.1,<4"
+ipykernel = ">=6.30.1,<7"
+
+# GPU-enabled PyTorch from conda-forge (recommended by Pixi docs)
+pytorch-gpu = "*"
+torchvision = "*"
+torchaudio = "*"
+httpx = ">=0.28.1,<0.29"
+python-dotenv = ">=1.2.1,<2"
+rasterio = ">=1.4.3,<2"
+mlflow = ">=3.5.1,<4"
+openeo = ">=0.46.0,<0.47"
+geopandas = ">=1.1.1,<2"
+h5netcdf = ">=1.7.3,<2"
+netcdf4 = ">=1.7.2,<2"
+rioxarray = ">=0.19.0,<0.20"
+pystac = ">=1.14.2,<2"
+pystac-client = ">=0.9.0,<0.10"
+
+[tasks]
+python = "python"
+jupyter-lab = "jupyter lab"
+jupyter-notebook = "jupyter notebook"
