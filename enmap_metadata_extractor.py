@@ -7,7 +7,6 @@ filename and bbox, and extracts detailed band metadata (wavelengths, FWHM).
 
 Usage:
     python enmap_metadata_extractor.py --image path/to/enmap.tif
-    python enmap_metadata_extractor.py --image path/to/enmap.tif --output metadata.json
     python enmap_metadata_extractor.py --batch path/to/enmap_directory/
 """
 
@@ -15,6 +14,8 @@ import os
 import sys
 import re
 import json
+import shutil
+import tempfile
 import argparse
 import logging
 from datetime import datetime
@@ -22,6 +23,7 @@ from typing import Dict, List, Optional, Tuple
 
 import rasterio
 from rasterio.warp import transform_bounds
+from rasterio.enums import ColorInterp
 from pystac_client import Client
 
 
@@ -184,6 +186,100 @@ class EnmapMetadataExtractor:
         logger.warning("No eo:bands metadata found in STAC item")
         return []
 
+    def write_band_descriptions_to_tif(
+        self,
+        image_path: str,
+        band_metadata: List[Dict]
+    ) -> bool:
+        """
+        Write band descriptions and metadata directly into the TIF file.
+        
+        """
+        logger.info(f"\nWriting band descriptions to TIF: {os.path.basename(image_path)}")
+
+        tmp_path = None
+
+        try:
+            with rasterio.open(image_path) as src:
+                profile = src.profile.copy()
+                num_bands = src.count
+
+                if len(band_metadata) != num_bands:
+                    logger.warning(
+                        f"Band count mismatch: image has {num_bands} bands "
+                        f"but metadata has {len(band_metadata)} entries. "
+                        f"Will write descriptions for min({num_bands}, {len(band_metadata)}) bands."
+                    )
+
+                bands_to_write = min(num_bands, len(band_metadata))
+
+                # Create a temp file in the same directory so rename is atomic
+                tmp_fd, tmp_path = tempfile.mkstemp(
+                    suffix='.tif',
+                    dir=os.path.dirname(os.path.abspath(image_path))
+                )
+                os.close(tmp_fd)
+
+                with rasterio.open(tmp_path, 'w', **profile) as dst:
+
+                    for band_idx in range(1, num_bands + 1):
+                        data = src.read(band_idx)
+                        dst.write(data, band_idx)
+
+                    if src.tags():
+                        dst.update_tags(**src.tags())
+
+                    for i in range(bands_to_write):
+                        band_info = band_metadata[i]
+                        band_idx  = i + 1   
+
+                        name       = band_info.get('name', f'Band_{band_idx}')
+                        wavelength = band_info.get('center_wavelength', None)
+                        fwhm       = band_info.get('full_width_half_max', None)
+
+                        if wavelength is not None:
+                            description = f"Band {band_idx:03d}: {wavelength}"
+                        else:
+                            description = f"Band {band_idx:03d}"
+                            
+                        dst.set_band_description(band_idx, description)
+
+                        dst.update_tags(band_idx, description=description)
+
+                        # Also write individual metadata fields per band
+                        band_tags = {"band_name": str(name)}
+                        if wavelength is not None:
+                            band_tags["CENTER_WAVELENGTH_NM"] = str(wavelength)
+                        if fwhm is not None:
+                            band_tags["FWHM_NM"] = str(fwhm)
+
+                        dst.update_tags(band_idx, **band_tags)
+
+                        logger.debug(
+                            f"  Band {band_idx}: description='{description}' | "
+                            f"tags={band_tags}"
+                        )
+
+
+            shutil.move(tmp_path, image_path)
+            tmp_path = None  
+
+            logger.info(f"  Band descriptions written successfully ({bands_to_write} bands)")
+            logger.info(f"  Original TIF replaced: {image_path}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to write band descriptions to TIF: {e}")
+            return False
+
+        finally:
+            # Clean up temp file if something went wrong before the move
+            if tmp_path and os.path.exists(tmp_path):
+                try:
+                    os.remove(tmp_path)
+                except OSError:
+                    pass
+
     def create_stac_item(
         self,
         image_path: str,
@@ -276,6 +372,10 @@ class EnmapMetadataExtractor:
 
         if len(band_metadata) > 3:
             logger.info(f"  ... and {len(band_metadata) - 3} more bands")
+
+        tif_success = self.write_band_descriptions_to_tif(image_path, band_metadata)
+        if not tif_success:
+            logger.warning("Band descriptions could not be written to TIF — continuing with JSON export only.")
 
         stac_item = self.create_stac_item(
             image_path,
@@ -429,3 +529,4 @@ Examples:
 
 if __name__ == "__main__":
     main()
+
